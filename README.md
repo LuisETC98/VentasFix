@@ -164,8 +164,4 @@ A continuación se demuestran las vistas visuales y flujos que constatan el func
 ### 8. Ventana de Confirmación Dinámica (Eliminar)
 ![Modal Eliminar](./evidencias/Eliminar.JPG)
 
----
-<div align="center">
-Desarrollado con pasión para la excelencia administrativa corporativa. <br>
-<b>© 2026 VentasFix SpA</b>
-</div>
+
