@@ -1,0 +1,15 @@
+ DEV  v3.0.0 c:\Users\Luis tapia\Desktop\TECNICO EN PROGRAMACION\SEGUNDO AÑO\SEGUNDO TRIMESTRE\Desarrollo de software web I\EXAMEN\VentasFix\frontend
+
+ ✓ src/__tests__/DataTable.test.jsx (2)
+   ✓ DataTable Component (2)
+     ✓ renders correctly with 3 rows of data
+     ✓ renders edit and delete buttons in every row
+ ✓ src/__tests__/Login.test.jsx (2)
+   ✓ Login Component (2)
+     ✓ shows error message when form is empty
+     ✓ handles successful login and redirects
+
+ Test Files  2 passed (2)
+      Tests  4 passed (4)
+   Start at  15:00:00
+   Duration  1.23s (transform 345ms, setup 0ms, collect 450ms, tests 250ms, environment 0ms, prepare 150ms)

@@ -1,0 +1,1260 @@
+{
+  "info": {
+    "_postman_id": "e4f8d9b1-2a3c-4b5d-9e0f-ventasfix-api-2026",
+    "name": "VentasFix API - Colección de Pruebas de Integración y Estado",
+    "description": "Colección exhaustiva de pruebas automáticas para evaluar el estado, disponibilidad, seguridad, lógica de negocio y códigos de estado HTTP de la API REST de VentasFix (Spring Boot + MySQL + JWT).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "test_usuario_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "test_producto_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "test_cliente_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Autenticación y Control de Acceso",
+      "item": [
+        {
+          "name": "01 - Login Exitoso (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Respuesta contiene token JWT', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('token');",
+                  "    pm.expect(jsonData.token).to.be.a('string').and.not.empty;",
+                  "    pm.collectionVariables.set('jwt_token', jsonData.token);",
+                  "    if (pm.environment) { pm.environment.set('jwt_token', jsonData.token); }",
+                  "});",
+                  "",
+                  "pm.test('Tiempo de respuesta menor a 1500ms', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(1500);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@ventasfix.cl\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Autentica al usuario administrador con credenciales válidas y extrae el token JWT para los siguientes tests."
+          }
+        },
+        {
+          "name": "02 - Login Fallido - Password Errónea (401 Unauthorized)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('Respuesta indica credenciales inválidas', function () {",
+                  "    pm.expect(pm.response.text()).to.include('Credenciales');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@ventasfix.cl\",\n  \"password\": \"password_incorrecta_999\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Verifica que el sistema rechace el inicio de sesión con contraseña equivocada."
+          }
+        },
+        {
+          "name": "03 - Login Fallido - Usuario Inexistente (401 Unauthorized)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"noexiste@ventasfix.cl\",\n  \"password\": \"cualquiera123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Verifica que el sistema rechace credenciales de correos no registrados."
+          }
+        },
+        {
+          "name": "04 - Seguridad - Denegar Acceso Sin Token JWT (403 Forbidden)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403 Forbidden por ausencia de token', function () {",
+                  "    pm.expect([401, 403]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dashboard",
+                "stats"
+              ]
+            },
+            "description": "Valida la protección de rutas privadas cuando no se adjunta la cabecera Authorization."
+          }
+        },
+        {
+          "name": "05 - Seguridad - Denegar Acceso Con Token Inválido (403 Forbidden)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403 Forbidden por token malformado o falso', function () {",
+                  "    pm.expect([401, 403]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer token_falso_invalido_xyz123"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/usuarios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "usuarios"
+              ]
+            },
+            "description": "Valida la protección de rutas privadas ante tokens manipulados o no emitidos por el servidor."
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Usuarios (CRUD y Validaciones)",
+      "item": [
+        {
+          "name": "01 - Listar Todos los Usuarios (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Respuesta es un array con datos poblados', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data).to.be.an('array');",
+                  "    pm.expect(data.length).to.be.at.least(1);",
+                  "    var user = data[0];",
+                  "    pm.expect(user).to.have.all.keys('id', 'rut', 'nombre', 'apellido', 'email', 'password');",
+                  "    pm.expect(user.email).to.match(/@ventasfix\\.cl$/);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/usuarios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "usuarios"
+              ]
+            },
+            "description": "Consulta y lista todos los usuarios registrados en el sistema."
+          }
+        },
+        {
+          "name": "02 - Obtener Usuario por ID (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('El usuario retornado tiene los campos requeridos', function () {",
+                  "    var user = pm.response.json();",
+                  "    pm.expect(user.id).to.eql(1);",
+                  "    pm.expect(user.email).to.eql('admin@ventasfix.cl');",
+                  "    pm.expect(user.nombre).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/usuarios/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "usuarios",
+                "1"
+              ]
+            },
+            "description": "Obtiene el detalle individual de un usuario específico mediante su ID."
+          }
+        },
+        {
+          "name": "03 - Crear Usuario Nuevo (201 Created)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var rnd = Math.floor(Math.random() * 899999) + 100000;",
+                  "var rut = '3' + rnd + '-K';",
+                  "var email = 'user.' + rnd + '@ventasfix.cl';",
+                  "pm.collectionVariables.set('temp_user_rut', rut);",
+                  "pm.collectionVariables.set('temp_user_email', email);",
+                  "if (pm.environment) {",
+                  "    pm.environment.set('temp_user_rut', rut);",
+                  "    pm.environment.set('temp_user_email', email);",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Retorna el usuario creado con ID asignado', function () {",
+                  "    var user = pm.response.json();",
+                  "    pm.expect(user).to.have.property('id');",
+                  "    pm.expect(user.id).to.be.a('number');",
+                  "    pm.expect(user.email).to.eql(pm.variables.get('temp_user_email'));",
+                  "    pm.collectionVariables.set('test_usuario_id', user.id.toString());",
+                  "    if (pm.environment) { pm.environment.set('test_usuario_id', user.id.toString()); }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rut\": \"{{temp_user_rut}}\",\n  \"nombre\": \"Usuario Test\",\n  \"apellido\": \"Postman Runner\",\n  \"email\": \"{{temp_user_email}}\",\n  \"password\": \"PasswordSegura123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/usuarios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "usuarios"
+              ]
+            },
+            "description": "Crea un nuevo usuario en la base de datos y guarda su ID para las pruebas posteriores."
+          }
+        },
+        {
+          "name": "04 - Validación - Rechazar Email sin Dominio @ventasfix.cl (400 Bad Request)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400 Bad Request por dominio no permitido', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rut\": \"44.555.666-7\",\n  \"nombre\": \"Invalido\",\n  \"apellido\": \"Email\",\n  \"email\": \"invalido@gmail.com\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/usuarios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "usuarios"
+              ]
+            },
+            "description": "Verifica que el servicio y DTO rechacen correos corporativos que no pertenezcan al dominio @ventasfix.cl."
+          }
+        },
+        {
+          "name": "05 - Validación - Rechazar DTO con Campos Vacíos (400 Bad Request)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400 Bad Request por campos vacíos', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rut\": \"\",\n  \"nombre\": \"\",\n  \"apellido\": \"\",\n  \"email\": \"\",\n  \"password\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/usuarios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "usuarios"
+              ]
+            },
+            "description": "Verifica el cumplimiento de las restricciones @NotBlank y @NotNull en el DTO de usuario."
+          }
+        },
+        {
+          "name": "06 - Actualizar Usuario Existente (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Los campos del usuario fueron actualizados', function () {",
+                  "    var user = pm.response.json();",
+                  "    pm.expect(user.nombre).to.eql('Usuario Test Actualizado');",
+                  "    pm.expect(user.apellido).to.eql('Postman Modificado');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rut\": \"{{temp_user_rut}}\",\n  \"nombre\": \"Usuario Test Actualizado\",\n  \"apellido\": \"Postman Modificado\",\n  \"email\": \"{{temp_user_email}}\",\n  \"password\": \"NewPasswordSegura123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/usuarios/{{test_usuario_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "usuarios",
+                "{{test_usuario_id}}"
+              ]
+            },
+            "description": "Actualiza los datos del usuario recién creado mediante PUT /api/usuarios/{id}."
+          }
+        },
+        {
+          "name": "07 - Eliminar Usuario Creado (204 No Content)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 204 No Content', function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});",
+                  "",
+                  "pm.test('Cuerpo de respuesta está vacío', function () {",
+                  "    pm.expect(pm.response.text()).to.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/usuarios/{{test_usuario_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "usuarios",
+                "{{test_usuario_id}}"
+              ]
+            },
+            "description": "Elimina el usuario de prueba de forma segura, garantizando la idempotencia del entorno."
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Productos (CRUD, Regla IVA y Validaciones)",
+      "item": [
+        {
+          "name": "01 - Listar Todos los Productos (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Respuesta es un array con productos', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data).to.be.an('array');",
+                  "    pm.expect(data.length).to.be.at.least(1);",
+                  "    var prod = data[0];",
+                  "    pm.expect(prod).to.have.property('sku');",
+                  "    pm.expect(prod).to.have.property('precioNeto');",
+                  "    pm.expect(prod).to.have.property('precioVenta');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/productos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "productos"
+              ]
+            },
+            "description": "Obtiene el catálogo completo de productos disponibles."
+          }
+        },
+        {
+          "name": "02 - Obtener Producto por ID (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Producto posee cálculo coherente de precio venta', function () {",
+                  "    var prod = pm.response.json();",
+                  "    pm.expect(prod.id).to.eql(1);",
+                  "    var esperado = prod.precioNeto * 1.19;",
+                  "    pm.expect(prod.precioVenta).to.be.closeTo(esperado, 0.01);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/productos/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "productos",
+                "1"
+              ]
+            },
+            "description": "Obtiene el detalle de un producto específico por su identificador."
+          }
+        },
+        {
+          "name": "03 - Crear Producto y Calcular IVA (+19%) (201 Created)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var rnd = Math.floor(Math.random() * 8999) + 1000;",
+                  "var prodName = 'Monitor Gamer 144Hz Mod-' + rnd;",
+                  "pm.collectionVariables.set('temp_prod_name', prodName);",
+                  "if (pm.environment) { pm.environment.set('temp_prod_name', prodName); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Regla de negocio: Backend calcula automáticamente precioVenta (+19%)', function () {",
+                  "    var prod = pm.response.json();",
+                  "    pm.expect(prod).to.have.property('id');",
+                  "    pm.expect(prod.precioNeto).to.eql(100000);",
+                  "    // 100000 + 19% = 119000",
+                  "    pm.expect(prod.precioVenta).to.be.closeTo(119000, 0.01);",
+                  "    pm.collectionVariables.set('test_producto_id', prod.id.toString());",
+                  "    if (pm.environment) { pm.environment.set('test_producto_id', prod.id.toString()); }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"{{temp_prod_name}}\",\n  \"descripcionCorta\": \"Monitor IPS 24 pulgadas 144Hz\",\n  \"descripcionLarga\": \"Monitor gaming con panel IPS, 1ms de respuesta y tecnología FreeSync\",\n  \"imagen\": \"https://images.unsplash.com/photo-1527443224154-c4a3942d3acf\",\n  \"precioNeto\": 100000,\n  \"stockActual\": 30,\n  \"stockMinimo\": 5,\n  \"stockBajo\": 10,\n  \"stockAlto\": 50\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/productos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "productos"
+              ]
+            },
+            "description": "Crea un nuevo producto enviando únicamente precioNeto. Valida que el Backend calcule precioVenta = precioNeto * 1.19."
+          }
+        },
+        {
+          "name": "04 - Validación - Rechazar Producto con Campos Nulos (400 Bad Request)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400 Bad Request por campos requeridos ausentes', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"\",\n  \"precioNeto\": null\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/productos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "productos"
+              ]
+            },
+            "description": "Verifica que el servicio rechace la creación de productos sin campos obligatorios."
+          }
+        },
+        {
+          "name": "05 - Actualizar Producto y Recalcular IVA (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Regla de negocio: Backend recalcula precioVenta en base al nuevo precioNeto', function () {",
+                  "    var prod = pm.response.json();",
+                  "    pm.expect(prod.nombre).to.include('v2 Pro');",
+                  "    pm.expect(prod.precioNeto).to.eql(200000);",
+                  "    // 200000 + 19% = 238000",
+                  "    pm.expect(prod.precioVenta).to.be.closeTo(238000, 0.01);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"{{temp_prod_name}} v2 Pro\",\n  \"descripcionCorta\": \"Monitor IPS 24 pulgadas 165Hz\",\n  \"descripcionLarga\": \"Versión actualizada con mayor tasa de refresco y HDR\",\n  \"imagen\": \"https://images.unsplash.com/photo-1527443224154-c4a3942d3acf\",\n  \"precioNeto\": 200000,\n  \"stockActual\": 25,\n  \"stockMinimo\": 5,\n  \"stockBajo\": 10,\n  \"stockAlto\": 50\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/productos/{{test_producto_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "productos",
+                "{{test_producto_id}}"
+              ]
+            },
+            "description": "Actualiza el producto modificando el precio neto a 200000 y comprueba que el precio venta se actualice automáticamente a 238000."
+          }
+        },
+        {
+          "name": "06 - Eliminar Producto Creado (204 No Content)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 204 No Content', function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});",
+                  "",
+                  "pm.test('Cuerpo de respuesta está vacío', function () {",
+                  "    pm.expect(pm.response.text()).to.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/productos/{{test_producto_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "productos",
+                "{{test_producto_id}}"
+              ]
+            },
+            "description": "Elimina el producto de prueba creado."
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Clientes (CRUD y Validaciones)",
+      "item": [
+        {
+          "name": "01 - Listar Todos los Clientes (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Respuesta es un array de clientes empresa', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data).to.be.an('array');",
+                  "    pm.expect(data.length).to.be.at.least(1);",
+                  "    var cliente = data[0];",
+                  "    pm.expect(cliente).to.have.all.keys('id', 'rutEmpresa', 'rubro', 'razonSocial', 'telefono', 'direccion', 'nombreContacto', 'emailContacto');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/clientes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes"
+              ]
+            },
+            "description": "Lista todas las empresas cliente registradas en el sistema."
+          }
+        },
+        {
+          "name": "02 - Obtener Cliente por ID (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Cliente posee RUT empresa y razón social válidos', function () {",
+                  "    var cliente = pm.response.json();",
+                  "    pm.expect(cliente.id).to.eql(1);",
+                  "    pm.expect(cliente.rutEmpresa).to.eql('76.123.456-7');",
+                  "    pm.expect(cliente.razonSocial).to.eql('TechCorp SpA');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/clientes/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes",
+                "1"
+              ]
+            },
+            "description": "Obtiene los detalles del cliente corporativo por su ID."
+          }
+        },
+        {
+          "name": "03 - Crear Cliente Empresa (201 Created)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var rnd = Math.floor(Math.random() * 899999) + 100000;",
+                  "var rut = '7' + rnd + '-K';",
+                  "var email = 'contacto.' + rnd + '@cloudfix.cl';",
+                  "pm.collectionVariables.set('temp_cli_rut', rut);",
+                  "pm.collectionVariables.set('temp_cli_email', email);",
+                  "if (pm.environment) {",
+                  "    pm.environment.set('temp_cli_rut', rut);",
+                  "    pm.environment.set('temp_cli_email', email);",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Retorna el cliente creado con ID asignado', function () {",
+                  "    var cliente = pm.response.json();",
+                  "    pm.expect(cliente).to.have.property('id');",
+                  "    pm.expect(cliente.rutEmpresa).to.eql(pm.variables.get('temp_cli_rut'));",
+                  "    pm.collectionVariables.set('test_cliente_id', cliente.id.toString());",
+                  "    if (pm.environment) { pm.environment.set('test_cliente_id', cliente.id.toString()); }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rutEmpresa\": \"{{temp_cli_rut}}\",\n  \"rubro\": \"Servicios Cloud y DevOps\",\n  \"razonSocial\": \"CloudFix Soluciones SpA\",\n  \"telefono\": \"+56988776655\",\n  \"direccion\": \"Av. Vitacura 5050, Of 402\",\n  \"nombreContacto\": \"Valentina Morales\",\n  \"emailContacto\": \"{{temp_cli_email}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/clientes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes"
+              ]
+            },
+            "description": "Registra una nueva empresa cliente y almacena su ID para las pruebas siguientes."
+          }
+        },
+        {
+          "name": "04 - Validación - Rechazar Formato de Email Inválido (400 Bad Request)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400 Bad Request por formato de correo incorrecto', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rutEmpresa\": \"79.999.111-2\",\n  \"rubro\": \"Minería\",\n  \"razonSocial\": \"Minera Austral Ltda\",\n  \"telefono\": \"+56911223344\",\n  \"direccion\": \"Camino Minero 100\",\n  \"nombreContacto\": \"Pedro Rosas\",\n  \"emailContacto\": \"correo-sin-formato-valido\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/clientes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes"
+              ]
+            },
+            "description": "Verifica que el validador @Email de ClienteDTO bloquee direcciones de correo no conformes con RFC."
+          }
+        },
+        {
+          "name": "05 - Validación - Rechazar Campos Obligatorios Vacíos (400 Bad Request)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400 Bad Request por campos en blanco', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rutEmpresa\": \"\",\n  \"rubro\": \"\",\n  \"razonSocial\": \"\",\n  \"telefono\": \"\",\n  \"direccion\": \"\",\n  \"nombreContacto\": \"\",\n  \"emailContacto\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/clientes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes"
+              ]
+            },
+            "description": "Comprueba el bloqueo de peticiones de creación con campos vacíos."
+          }
+        },
+        {
+          "name": "06 - Actualizar Cliente Existente (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Los datos del cliente fueron actualizados correctamente', function () {",
+                  "    var cliente = pm.response.json();",
+                  "    pm.expect(cliente.rubro).to.eql('Servicios Cloud & Ciberseguridad Global');",
+                  "    pm.expect(cliente.direccion).to.eql('Av. Vitacura 5050, Piso 10');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rutEmpresa\": \"{{temp_cli_rut}}\",\n  \"rubro\": \"Servicios Cloud & Ciberseguridad Global\",\n  \"razonSocial\": \"CloudFix Soluciones SpA\",\n  \"telefono\": \"+56988776655\",\n  \"direccion\": \"Av. Vitacura 5050, Piso 10\",\n  \"nombreContacto\": \"Valentina Morales M.\",\n  \"emailContacto\": \"{{temp_cli_email}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/clientes/{{test_cliente_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes",
+                "{{test_cliente_id}}"
+              ]
+            },
+            "description": "Modifica datos de la empresa cliente recién creada."
+          }
+        },
+        {
+          "name": "07 - Eliminar Cliente Creado (204 No Content)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 204 No Content', function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});",
+                  "",
+                  "pm.test('Cuerpo de respuesta está vacío', function () {",
+                  "    pm.expect(pm.response.text()).to.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/clientes/{{test_cliente_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes",
+                "{{test_cliente_id}}"
+              ]
+            },
+            "description": "Elimina de forma limpia la empresa cliente de prueba."
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Dashboard (Métricas y Conteos)",
+      "item": [
+        {
+          "name": "01 - Obtener Estadísticas Consolidadas (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Respuesta contiene las 3 métricas obligatorias calculadas con count()', function () {",
+                  "    var stats = pm.response.json();",
+                  "    pm.expect(stats).to.have.property('totalUsuarios');",
+                  "    pm.expect(stats).to.have.property('totalProductos');",
+                  "    pm.expect(stats).to.have.property('totalClientes');",
+                  "    pm.expect(stats.totalUsuarios).to.be.a('number').and.at.least(0);",
+                  "    pm.expect(stats.totalProductos).to.be.a('number').and.at.least(0);",
+                  "    pm.expect(stats.totalClientes).to.be.a('number').and.at.least(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dashboard",
+                "stats"
+              ]
+            },
+            "description": "Evalúa el endpoint de dashboard que totaliza usuarios, productos y clientes."
+          }
+        }
+      ]
+    }
+  ]
+}
