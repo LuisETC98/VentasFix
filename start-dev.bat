@@ -4,10 +4,10 @@ echo     Iniciando Entorno de Desarrollo VentasFix PRO
 echo =======================================================
 
 echo [1/2] Levantando Backend (Spring Boot - Puerto 8080)...
-start "VentasFix - Backend (Spring Boot)" cmd /c "cd backend && .\mvnw.cmd spring-boot:run"
+start "VentasFix - Backend (Spring Boot)" cmd /k "cd backend && .\mvnw.cmd spring-boot:run"
 
 echo [2/2] Levantando Frontend (React/Vite - Puerto 5173)...
-start "VentasFix - Frontend (React)" cmd /c "cd frontend && npm run dev"
+start "VentasFix - Frontend (React)" cmd /k "cd frontend && npm run dev"
 
 echo.
 echo =======================================================

@@ -26,17 +26,27 @@ public class ProductoService {
     @Transactional
     public Producto save(ProductoDTO dto) {
         Producto producto = new Producto();
-        producto.setSku("TEMP-" + System.currentTimeMillis()); // Evitar restricción null/unique temporalmente
+        if (dto.getSku() != null && !dto.getSku().trim().isEmpty()) {
+            if (productoRepository.existsBySku(dto.getSku())) {
+                throw new RuntimeException("El SKU ya está registrado");
+            }
+            producto.setSku(dto.getSku());
+        } else {
+            producto.setSku(String.format("SKU-%04d", (System.currentTimeMillis() % 9000) + 1000));
+        }
         producto = mapDtoToEntity(dto, producto);
-        Producto saved = productoRepository.save(producto);
-        
-        saved.setSku(String.format("SKU-%04d", saved.getId()));
-        return productoRepository.save(saved);
+        return productoRepository.save(producto);
     }
 
     @Transactional
     public Producto update(Long id, ProductoDTO dto) {
         Producto producto = findById(id);
+        if (dto.getSku() != null && !dto.getSku().trim().isEmpty() && !producto.getSku().equals(dto.getSku())) {
+            if (productoRepository.existsBySku(dto.getSku())) {
+                throw new RuntimeException("El SKU ya está registrado");
+            }
+            producto.setSku(dto.getSku());
+        }
         return productoRepository.save(mapDtoToEntity(dto, producto));
     }
 

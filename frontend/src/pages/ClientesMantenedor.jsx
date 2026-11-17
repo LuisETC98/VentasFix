@@ -38,7 +38,7 @@ export default function ClientesMantenedor() {
         await api.delete(`/clientes/${deleteData.row.id}`);
         fetchClientes();
       } catch (error) {
-        alert(error.response?.data?.message || 'Error al eliminar');
+        alert(error.response?.data?.message || error.response?.data?.error || 'Error al eliminar');
       }
     }
   };
@@ -54,7 +54,7 @@ export default function ClientesMantenedor() {
       setModalOpen(false);
       fetchClientes();
     } catch (error) {
-      alert(error.response?.data?.message || 'Error al guardar');
+      alert(error.response?.data?.message || error.response?.data?.error || 'Error al guardar');
     }
   };
 

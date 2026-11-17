@@ -29,6 +29,9 @@ public class UsuarioService {
 
     @Transactional
     public Usuario save(UsuarioDTO dto) {
+        if (dto.getPassword() == null || dto.getPassword().trim().isEmpty()) {
+            throw new IllegalArgumentException("La contraseña es obligatoria");
+        }
         if (usuarioRepository.existsByEmail(dto.getEmail())) {
             throw new RuntimeException("El email ya está registrado");
         }
@@ -66,7 +69,7 @@ public class UsuarioService {
         usuario.setNombre(dto.getNombre());
         usuario.setApellido(dto.getApellido());
         usuario.setEmail(dto.getEmail());
-        if(dto.getPassword() != null && !dto.getPassword().isEmpty()){
+        if (dto.getPassword() != null && !dto.getPassword().trim().isEmpty()){
             usuario.setPassword(passwordEncoder.encode(dto.getPassword()));
         }
         return usuarioRepository.save(usuario);

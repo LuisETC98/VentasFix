@@ -136,6 +136,102 @@ Accede en tu navegador al enlace provisto (usualmente `http://localhost:5173`) e
 
 ---
 
+## ☁️ Guía de Despliegue en la Nube (Oracle Cloud Infrastructure - OCI)
+
+El proyecto está 100% preparado y optimizado para ser desplegado en **Oracle Cloud Infrastructure (OCI)**, ya sea en una instancia de cómputo (*Compute VM Always Free* o estándar con Ubuntu / Oracle Linux), mediante **Docker Compose** o compilación nativa.
+
+### Arquitectura de Despliegue en OCI
+
+```text
+[ Internet / Navegador ]
+         │ (HTTP Puerto 80 / HTTPS 443)
+         ▼
+[ OCI Compute Instance (Virtual Cloud Network - VCN) ]
+         │
+         ├── [ Nginx Frontend (Puerto 80) ] ── (Soporte SPA & Proxy inverso /api)
+         │           │
+         │           ▼
+         ├── [ Spring Boot 4 Backend (Puerto 8080) ] ── (Salud: /api/health)
+         │           │
+         │           ▼
+         └── [ MySQL 8 Database (Puerto 3306) ] ── (Volumen persistente: mysql_data)
+```
+
+---
+
+### Paso a Paso: Despliegue con Docker Compose en OCI Compute
+
+#### 1. Requisitos Previos en OCI Console
+1. **Crear Instancia de Cómputo:**
+   - SO recomendado: Ubuntu 22.04 LTS o Oracle Linux 8/9 (disponibles en nivel gratuito *Always Free*).
+   - Asignar una IP pública reservada o efímera.
+2. **Abrir Puertos en la Security List (Lista de Seguridad de OCI):**
+   - En la consola de OCI, ve a: `Networking` > `Virtual Cloud Networks` > tu VCN > `Security Lists` > `Default Security List`.
+   - Agrega las siguientes **Ingress Rules** (Reglas de Entrada):
+     - **CIDR de origen:** `0.0.0.0/0` | **Protocolo:** `TCP` | **Puerto destino:** `80` (Frontend HTTP)
+     - **CIDR de origen:** `0.0.0.0/0` | **Protocolo:** `TCP` | **Puerto destino:** `443` (HTTPS / SSL opcional)
+     - **CIDR de origen:** `0.0.0.0/0` | **Protocolo:** `TCP` | **Puerto destino:** `8080` (Backend API directo, opcional si usas proxy en puerto 80)
+
+3. **Abrir Firewall en el Sistema Operativo de la VM (iptables / firewalld):**
+   Conéctate por SSH a tu instancia OCI y ejecuta:
+   ```bash
+   # En Ubuntu (OCI):
+   sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80 -j ACCEPT
+   sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 8080 -j ACCEPT
+   sudo netfilter-persistent save
+
+   # En Oracle Linux (OCI):
+   sudo firewall-cmd --permanent --zone=public --add-port=80/tcp
+   sudo firewall-cmd --permanent --zone=public --add-port=8080/tcp
+   sudo firewall-cmd --reload
+   ```
+
+#### 2. Instalar Docker y Docker Compose en la Instancia
+```bash
+# Actualizar e instalar Docker
+sudo apt update && sudo apt install -y docker.io docker-compose
+sudo systemctl enable --now docker
+sudo usermod -aG docker $USER
+# Cierra sesión SSH y vuelve a entrar para aplicar permisos de grupo
+```
+
+#### 3. Clonar el Proyecto y Configurar Variables de Entorno
+```bash
+git clone <URL_DE_TU_REPOSITORIO>
+cd VentasFix
+
+# Crear tu archivo .env basado en la plantilla de producción
+cp .env.example .env
+nano .env
+```
+> [!IMPORTANT]
+> Configura contraseñas seguras para `DB_PASSWORD` y `DB_ROOT_PASSWORD` en el archivo `.env`. Si accedes al frontend a través del puerto 80 con el Nginx proxy inverso incluido, `VITE_API_URL=/api` funcionará sin necesidad de configurar dominios adicionales.
+
+#### 4. Construir y Levantar los Servicios en OCI
+```bash
+# Construir imágenes y levantar en segundo plano
+docker compose up -d --build
+
+# Verificar el estado de los contenedores
+docker compose ps
+```
+
+#### 5. Verificación de Funcionamiento en la Nube
+1. **Health Check del Backend:**
+   ```bash
+   curl http://localhost:8080/api/health
+   # Respuesta esperada: {"status":"UP","service":"VentasFix Backend"}
+   ```
+2. **Acceso Web:**
+   Ingresa en tu navegador web a la IP pública de tu instancia OCI:
+   `http://<TU_IP_PUBLICA_OCI>`
+3. **Credenciales de Acceso Inicial:**
+   - **Usuario:** `admin@ventasfix.cl`
+   - **Contraseña:** `admin123`
+   *(El `DataSeeder` precarga automáticamente el administrador y catálogo base al iniciar).*
+
+---
+
 ## 🖼️ Evidencias de Ejecución (Capturas)
 
 A continuación se demuestran las vistas visuales y flujos que constatan el funcionamiento exitoso del proyecto final bajo el estilo paramétrico *Electric Iris*.

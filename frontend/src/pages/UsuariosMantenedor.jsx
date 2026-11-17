@@ -38,7 +38,7 @@ export default function UsuariosMantenedor() {
         await api.delete(`/usuarios/${deleteData.row.id}`);
         fetchUsuarios();
       } catch (error) {
-        alert(error.response?.data?.message || 'Error al eliminar');
+        alert(error.response?.data?.message || error.response?.data?.error || 'Error al eliminar');
       }
     }
   };
@@ -47,14 +47,18 @@ export default function UsuariosMantenedor() {
     e.preventDefault();
     try {
       if (editingId) {
-        await api.put(`/usuarios/${editingId}`, formData);
+        const payload = { ...formData };
+        if (!payload.password || payload.password.trim() === '') {
+          delete payload.password;
+        }
+        await api.put(`/usuarios/${editingId}`, payload);
       } else {
         await api.post('/usuarios', formData);
       }
       setModalOpen(false);
       fetchUsuarios();
     } catch (error) {
-      alert(error.response?.data?.message || 'Error al guardar');
+      alert(error.response?.data?.message || error.response?.data?.error || 'Error al guardar');
     }
   };
 

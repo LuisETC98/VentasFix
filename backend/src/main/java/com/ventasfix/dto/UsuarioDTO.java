@@ -2,7 +2,6 @@ package com.ventasfix.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
@@ -20,6 +19,5 @@ public class UsuarioDTO {
     @Email(regexp = "^.+@ventasfix\\.cl$")
     private String email;
 
-    @NotBlank
     private String password;
 }
