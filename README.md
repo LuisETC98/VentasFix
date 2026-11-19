@@ -9,8 +9,29 @@
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.4.3-6DB33F?logo=spring&logoColor=white)](#)
 [![Java](https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white)](#)
 [![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?logo=mysql&logoColor=white)](#)
+[![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?logo=docker&logoColor=white)](#)
+[![SSL](https://img.shields.io/badge/SSL%2FTLS-Let's_Encrypt-003A70?logo=letsencrypt&logoColor=white)](#)
+[![DuckDNS](https://img.shields.io/badge/DNS-DuckDNS-FFD700?logo=duckdns&logoColor=black)](#)
 
 </div>
+
+---
+
+## 🌐 Acceso a la Aplicación en Producción
+
+La plataforma se encuentra desplegada y asegurada con certificado SSL/TLS en la nube de **Oracle Cloud Infrastructure (OCI)**:
+
+* **URL Oficial de Acceso:** [https://ventasfix.duckdns.org](https://ventasfix.duckdns.org)
+* **Acceso alternativo por IP:** `http://155.181.151.237` (Redirige automáticamente a HTTPS)
+
+### 🔑 Credenciales Maestras de Acceso (Administrador)
+| Campo | Valor |
+|---|---|
+| **Correo Electrónico (Username)** | `admin@ventasfix.cl` |
+| **Contraseña** | `admin123` |
+
+> [!NOTE]
+> Al iniciar la aplicación en un entorno nuevo, el componente `DataSeeder` precarga automáticamente el usuario administrador inicial junto con un catálogo completo de productos y clientes de prueba.
 
 ---
 
@@ -34,7 +55,7 @@ El proyecto sigue una arquitectura **Cliente-Servidor Desacoplada**, permitiendo
 ### 🎨 Frontend (Capa de Presentación)
 - **React 19 & Vite 5:** Motor hiper-rápido de renderizado y compilación de HMR (Hot Module Replacement).
 - **Tailwind CSS v4:** Framework de utilidades configurado como motor interno de Vite para estructurar las mallas y utilidades visuales responsivas.
-- **Axios & React Router DOM:** Manejo del enrutamiento de vistas y despachador de peticiones HTTP (con interceptores automáticos de seguridad para inyectar el Bearer Token).
+- **Axios & React Router DOM:** Manejo del enrutamiento de vistas y despachador de peticiones HTTP (con interceptores automáticos de seguridad para inyectar el Bearer Token y redireccionar al login en caso de expiración 401/403).
 - **Vitest & React Testing Library:** Ecosistema para pruebas unitarias de componentes aislados (`Login`, `DataTable`).
 
 ### ⚙️ Backend (Capa de Negocio y Datos)
@@ -44,6 +65,13 @@ El proyecto sigue una arquitectura **Cliente-Servidor Desacoplada**, permitiendo
 - **MySQL 8:** Base de datos robusta para la persistencia transaccional de todos los mantenedores y métricas.
 - **JUnit 5 & Mockito:** Suite de pruebas unitarias enfocada en probar servicios aislados simulando los repositorios de datos.
 
+### 🛡️ Infraestructura Cloud & Seguridad
+- **Oracle Cloud Infrastructure (OCI):** Máquina virtual de cómputo en la región `sa-santiago-1`.
+- **Nginx Web Server & Reverse Proxy:** Servidor perimetral que recibe tráfico en puertos 80 y 443, gestiona el fallback de SPA para React (`try_files`) y enruta internamente las llamadas `/api/` hacia el backend Spring Boot.
+- **Certbot & Let's Encrypt:** Certificados SSL/TLS gratuitos emitidos vía desafío ACME HTTP-01 con renovación automática.
+- **DuckDNS:** Enrutamiento de nombres de dominio dinámico (DDNS) vinculado a la IP pública elástica/efímera de OCI.
+- **Docker & Docker Compose:** Contenedorización multi-etapa (*multi-stage builds*) para frontend, backend y base de datos con políticas de reinicio y healthchecks.
+
 ---
 
 ## 📁 Estructura del Proyecto
@@ -52,27 +80,32 @@ El proyecto sigue una arquitectura **Cliente-Servidor Desacoplada**, permitiendo
 VentasFix/
 ├── backend/                  # SERVIDOR JAVA SPRING BOOT
 │   ├── src/main/java/com/ventasfix/
-│   │   ├── config/           # SecurityConfig.java, DataSeeder.java, Filtros JWT
+│   │   ├── config/           # SecurityConfig.java, DataSeeder.java, GlobalExceptionHandler.java
 │   │   ├── controllers/      # Controladores REST (Auth, Dashboard, Crud)
-│   │   ├── dto/              # Objetos de Transferencia de Datos y validaciones (@NotBlank)
+│   │   ├── dto/              # Objetos de Transferencia de Datos y validaciones (@NotBlank, @NotNull)
 │   │   ├── models/           # Entidades JPA (Usuario, Producto, Cliente)
 │   │   ├── repositories/     # Interfaces Repository de JPA
-│   │   ├── services/         # Lógica de Negocio y reglas de la empresa (Ej. IVA 19%)
-│   │   └── utils/            # JWT Utils, decodificadores y ayudantes
+│   │   ├── services/         # Lógica de Negocio y reglas de la empresa (IVA 19%, SKU autogenerado)
+│   │   └── security/         # JwtUtil, JwtAuthenticationFilter, UserDetailsServiceImpl
+│   ├── Dockerfile            # Multi-stage build: Maven + Eclipse Temurin JRE 21 (usuario no-root)
 │   └── pom.xml               # Dependencias de Maven
 │
 ├── frontend/                 # INTERFAZ REACT WEB (VITE)
 │   ├── src/
-│   │   ├── components/       # Componentes visuales genéricos (DataTable, FormModal, Sidebar)
-│   │   ├── context/          # AuthContext (Estado global de sesión)
-│   │   ├── pages/            # Vistas enrutadas (Login, Dashboard, Mantenedores)
-│   │   ├── services/         # Cliente API Base (Axios) con Interceptores
-│   │   ├── index.css         # Archivo raíz con la paleta de colores y variables Tailwind
-│   │   └── App.jsx           # Rutas principales y protectores de vista (PrivateRoutes)
+│   │   ├── components/       # Componentes visuales genéricos (DataTable, FormModal, ConfirmModal, Layout)
+│   │   ├── context/          # AuthContext (Estado global de sesión JWT)
+│   │   ├── pages/            # Vistas enrutadas (Login, Dashboard, Usuarios, Productos, Clientes)
+│   │   ├── services/         # Cliente API (Axios con interceptor de autorización y refresco)
+│   │   ├── index.css         # Paleta de colores Electric Iris y Tailwind v4
+│   │   └── App.jsx           # Rutas principales y protectores de vista (ProtectedRoute)
+│   ├── Dockerfile            # Multi-stage build: Node 20 Alpine + Nginx Alpine
+│   ├── nginx.conf            # Configuración Nginx: SSL/TLS, compresión Gzip, proxy inverso /api
 │   ├── package.json          # Dependencias de NPM
-│   └── vite.config.js        # Configuración de servidor de desarrollo y plugins (Tailwind)
+│   └── vite.config.js        # Configuración de servidor Vite y plugins
 │
-└── start-dev.bat             # Script autómata de inicialización (Windows)
+├── docker-compose.yml        # Orquestación de servicios (db, backend, frontend) con volúmenes y redes
+├── .env.example              # Plantilla de variables de entorno para producción
+└── start-dev.bat             # Script de inicialización automatizada en Windows local
 ```
 
 ---
@@ -80,155 +113,168 @@ VentasFix/
 ## 🔧 Componentes e Implementaciones Destacadas
 
 ### 1. Autogeneración de SKUs (Reglas del Negocio)
-El sistema evita los cuellos de botella en la creación de productos. Al mandar el comando de persistencia, el backend guarda primero temporalmente, captura el `ID autoincremental` de MySQL y genera inmediatamente un SKU final inmutable bajo la nomenclatura `SKU-XXXX`, delegando el control lógico al servidor.
+El sistema evita cuellos de botella en la creación de productos. Al mandar el comando de persistencia, el servicio backend valida la unicidad, calcula los márgenes impositivos y genera de forma consistente el identificador único `SKU-XXXX`, delegando el control lógico estricto al servidor.
 
 ### 2. Tablas Inteligentes (`DataTable.jsx` y `ConfirmModal.jsx`)
-Un componente React agnóstico y altamente reutilizable, que toma un objeto JSON dinámico para generar columnas y renderizados. Además, se creó un modal de eliminación centralizado (`ConfirmModal`) que lee directamente la fila enfocada para preguntar al usuario explícitamente: *"¿Estás seguro de que deseas eliminar el producto Laptop?"* (Personalizando el mensaje).
+Un componente React agnóstico y altamente reutilizable que recibe un arreglo de columnas dinámicas y datos en JSON para generar visualizaciones tabulares responsivas. Además, incluye un modal de confirmación centralizado (`ConfirmModal`) que lee el registro seleccionado para solicitar confirmación explícita antes de cualquier eliminación (`DELETE`).
 
 ### 3. Paneles de Métrica y Análisis de Stock (`Dashboard.jsx`)
-El sistema extrae los datos puros, pero mediante procesamiento dinámico del lado del cliente evalúa `Stock Mínimo`, `Stock Bajo` y `Stock Actual` para clasificar las alertas de riesgo y pintarlas de colores en la interfaz, optimizando la compra de existencias.
+El sistema consume el endpoint `/api/dashboard/stats` para computar los totales de usuarios, productos y clientes. Adicionalmente, evalúa en tiempo real `Stock Mínimo`, `Stock Bajo` y `Stock Actual` para clasificar las alertas de riesgo y pintarlas con indicadores cromáticos en la interfaz.
 
-### 4. Data Seeder
-Un `CommandLineRunner` embebido en Spring Boot evalúa si la base de datos MySQL local está vacía al iniciar. Si no hay datos, procede a llenar registros base (usuarios administrativos, tecnología e información de empresas), agilizando brutalmente el trabajo en un nuevo entorno de desarrollo.
+### 4. Precarga de Datos Automática (`DataSeeder.java`)
+Un `CommandLineRunner` embebido en Spring Boot evalúa si la base de datos MySQL está vacía al iniciar. Si no hay datos, procede a poblar registros base con contraseñas cifradas en BCrypt, catálogo de productos y clientes de prueba.
+
+### 5. Cifrado y Redirección Segura SSL/TLS
+Nginx implementa una directiva de redirección 301 para forzar todo el tráfico HTTP al puerto HTTPS (443). Se configuraron suites de cifrado modernas (TLS 1.2 y 1.3) con soporte para certificados emitidos por Let's Encrypt montados como volúmenes de solo lectura en Docker.
 
 ---
 
 ## 🧪 Pruebas Unitarias y API (Postman)
 
-El proyecto cuenta con un plan de pruebas robusto para asegurar la calidad de todas las capas del aplicativo:
+El proyecto cuenta con un plan de pruebas integral para asegurar la calidad de todas las capas del aplicativo:
 
-- **Pruebas Unitarias Backend:** Se utilizaron `JUnit 5` y `Mockito` para validar la lógica de negocio aislada (Ej. cálculo del IVA, restricciones de registro) en la capa de servicios (`UsuarioServiceTest` y `ProductoServiceTest`), simulando (mocking) la respuesta de los repositorios JPA sin alterar la base de datos real.
-- **Pruebas Unitarias Frontend:** Se configuró `Vitest` y `React Testing Library` (RTL) para validar el renderizado condicional, la funcionalidad de los componentes estructurales (como el `DataTable`) y las validaciones de los formularios (`Login`).
-- **Pruebas de Integración (Postman):** Se incluye una colección de pruebas en la carpeta `pruebas_postman` que valida de manera exhaustiva todos los endpoints REST (Controladores) probando códigos de estado esperados (`200 OK`, `201 Created`, `204 No Content` y respuestas de error `400/401`) e inyección de token JWT.
+- **Pruebas Unitarias Backend:** Se utilizaron `JUnit 5` y `Mockito` para validar la lógica de negocio aislada (cálculo de IVA del 19%, autogeneración de SKU, unicidad de correos `@ventasfix.cl`) en la capa de servicios (`UsuarioServiceTest` y `ProductoServiceTest`), simulando el comportamiento de repositorios sin impactar la base de datos.
+- **Pruebas Unitarias Frontend:** Se configuró `Vitest` y `React Testing Library` (RTL) para validar el renderizado condicional, los componentes estructurales (`DataTable`) y las validaciones de los formularios (`Login`).
+- **Pruebas de Integración (Postman):** Se incluye una colección en `pruebas_postman` que valida exhaustivamente todos los endpoints REST probando códigos de estado HTTP rigurosos (`200 OK`, `201 Created`, `204 No Content` y respuestas `400/401`) junto con inyección de cabeceras `Authorization: Bearer <token>`.
 
 ---
 
 ## ▶️ Cómo ejecutar la aplicación localmente
 
-La arquitectura desacoplada requiere iniciar el servidor y la interfaz por separado, sin embargo, hemos simplificado el proceso:
+La arquitectura desacoplada permite levantar el entorno localmente de forma inmediata:
 
-### Opción 1: Ejecución en 1-Clic (Recomendado)
-Hemos provisto un script inteligente en la raíz del proyecto para desarrolladores en Windows.
-1. Haz doble clic en el archivo `start-dev.bat`.
-2. Este script abrirá automáticamente dos terminales independientes, levantando Java y Node.js en paralelo.
+### Opción 1: Ejecución en 1-Clic (Recomendado para Windows)
+1. Asegúrate de tener MySQL corriendo localmente (puerto `3306`).
+2. Haz doble clic en el archivo `start-dev.bat`.
+3. El script abrirá automáticamente dos consolas independientes levantando el backend Spring Boot (puerto `8080`) y el frontend Vite (puerto `5173`).
 
 ### Opción 2: Ejecución Manual
-Asegúrate de que **MySQL** esté corriendo localmente en el puerto `3306` con una base de datos vacía llamada `ventasfix` (credenciales por defecto: `root` / `admin123`).
-
-**1. Levantar el Servidor (Backend):**
-Abre una terminal en la carpeta `backend` y ejecuta el envoltorio de Maven (Maven Wrapper):
+**1. Backend (Spring Boot):**
 ```bash
-# Windows
+cd backend
+# En Windows:
 .\mvnw.cmd spring-boot:run
 
-# Linux/Mac
+# En Linux / Mac:
 ./mvnw spring-boot:run
 ```
-*(Nota: El servidor arrancará en el puerto `8080` y el `DataSeeder` inyectará los datos base automáticamente).*
 
-**2. Levantar la Interfaz (Frontend):**
-Abre una **nueva** terminal en la carpeta `frontend` y ejecuta:
+**2. Frontend (React / Vite):**
 ```bash
+cd frontend
 npm install
 npm run dev
 ```
-Accede en tu navegador al enlace provisto (usualmente `http://localhost:5173`) e inicia sesión con las credenciales de prueba: `admin@ventasfix.cl` / `admin123`.
+
+Ingresa a `http://localhost:5173` e inicia sesión con:
+- **Correo:** `admin@ventasfix.cl`
+- **Contraseña:** `admin123`
 
 ---
 
 ## ☁️ Guía de Despliegue en la Nube (Oracle Cloud Infrastructure - OCI)
 
-El proyecto está 100% preparado y optimizado para ser desplegado en **Oracle Cloud Infrastructure (OCI)**, ya sea en una instancia de cómputo (*Compute VM Always Free* o estándar con Ubuntu / Oracle Linux), mediante **Docker Compose** o compilación nativa.
+El proyecto está 100% contenerizado y optimizado para **Oracle Cloud Infrastructure (OCI)** en instancias de cómputo Ubuntu mediante **Docker Compose**.
 
 ### Arquitectura de Despliegue en OCI
 
 ```text
-[ Internet / Navegador ]
-         │ (HTTP Puerto 80 / HTTPS 443)
-         ▼
-[ OCI Compute Instance (Virtual Cloud Network - VCN) ]
-         │
-         ├── [ Nginx Frontend (Puerto 80) ] ── (Soporte SPA & Proxy inverso /api)
-         │           │
-         │           ▼
-         ├── [ Spring Boot 4 Backend (Puerto 8080) ] ── (Salud: /api/health)
-         │           │
-         │           ▼
-         └── [ MySQL 8 Database (Puerto 3306) ] ── (Volumen persistente: mysql_data)
+               [ Internet / Clientes ]
+                         │
+                         │ HTTPS (Puerto 443) / HTTP (Puerto 80 -> Redirect 301)
+                         ▼
+        [ OCI Compute Instance: ventasfix-productos ]
+        [ Dominio: https://ventasfix.duckdns.org    ]
+                         │
+        ┌────────────────┴────────────────────────────────────────┐
+        │  Docker Compose Network (ventasfix-network)             │
+        │                                                         │
+        │  ├── [ ventasfix-frontend ] (Nginx Alpine + SSL)        │
+        │  │   ├── Escucha: 80 (HTTP) & 443 (HTTPS)               │
+        │  │   ├── Montaje: /etc/letsencrypt (Certificados SSL)   │
+        │  │   ├── Entrega: SPA React 19 optimizada               │
+        │  │   └── Proxy: /api/* -> http://backend:8080/api/*     │
+        │  │                                                      │
+        │  ├── [ ventasfix-backend ] (Spring Boot 3 / Java 21)    │
+        │  │   ├── Escucha: 8080                                  │
+        │  │   ├── Healthcheck: /api/health                       │
+        │  │   └── Conexión ORM a base de datos                   │
+        │  │                                                      │
+        │  └── [ ventasfix-db ] (MySQL 8.0.45)                    │
+        │      ├── Escucha: 3306                                  │
+        │      └── Volumen persistente: mysql_data                │
+        └─────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-### Paso a Paso: Despliegue con Docker Compose en OCI Compute
+### Paso a Paso para Desplegar en OCI
 
-#### 1. Requisitos Previos en OCI Console
-1. **Crear Instancia de Cómputo:**
-   - SO recomendado: Ubuntu 22.04 LTS o Oracle Linux 8/9 (disponibles en nivel gratuito *Always Free*).
-   - Asignar una IP pública reservada o efímera.
-2. **Abrir Puertos en la Security List (Lista de Seguridad de OCI):**
-   - En la consola de OCI, ve a: `Networking` > `Virtual Cloud Networks` > tu VCN > `Security Lists` > `Default Security List`.
-   - Agrega las siguientes **Ingress Rules** (Reglas de Entrada):
-     - **CIDR de origen:** `0.0.0.0/0` | **Protocolo:** `TCP` | **Puerto destino:** `80` (Frontend HTTP)
-     - **CIDR de origen:** `0.0.0.0/0` | **Protocolo:** `TCP` | **Puerto destino:** `443` (HTTPS / SSL opcional)
-     - **CIDR de origen:** `0.0.0.0/0` | **Protocolo:** `TCP` | **Puerto destino:** `8080` (Backend API directo, opcional si usas proxy en puerto 80)
+#### 1. Configurar Reglas de Firewall en OCI Console y Ubuntu
+1. **En la consola web de OCI:**
+   - Ve a `Networking` ➔ `Virtual Cloud Networks` ➔ Tu VCN ➔ `Security Lists` ➔ `Default Security List`.
+   - Agrega en **Ingress Rules**:
+     - `0.0.0.0/0` | `TCP` | Puerto `80` (HTTP)
+     - `0.0.0.0/0` | `TCP` | Puerto `443` (HTTPS)
 
-3. **Abrir Firewall en el Sistema Operativo de la VM (iptables / firewalld):**
-   Conéctate por SSH a tu instancia OCI y ejecuta:
+2. **En el sistema operativo Ubuntu (SSH):**
+   > [!IMPORTANT]
+   > Las imágenes Ubuntu de OCI traen una regla por defecto en la posición 5 que rechaza todo el tráfico (`REJECT`). Es indispensable insertar las reglas al principio (`-I INPUT 1`) para que tengan efecto:
    ```bash
-   # En Ubuntu (OCI):
-   sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80 -j ACCEPT
-   sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 8080 -j ACCEPT
+   sudo iptables -I INPUT 1 -p tcp --dport 80 -j ACCEPT
+   sudo iptables -I INPUT 1 -p tcp --dport 443 -j ACCEPT
+   sudo iptables -I INPUT 1 -p tcp --dport 8080 -j ACCEPT
    sudo netfilter-persistent save
-
-   # En Oracle Linux (OCI):
-   sudo firewall-cmd --permanent --zone=public --add-port=80/tcp
-   sudo firewall-cmd --permanent --zone=public --add-port=8080/tcp
-   sudo firewall-cmd --reload
    ```
 
-#### 2. Instalar Docker y Docker Compose en la Instancia
+#### 2. Instalar Docker, Docker Compose y Certbot en Ubuntu
 ```bash
-# Actualizar e instalar Docker
-sudo apt update && sudo apt install -y docker.io docker-compose
+sudo apt update && sudo apt install -y docker.io docker-compose git certbot
 sudo systemctl enable --now docker
 sudo usermod -aG docker $USER
-# Cierra sesión SSH y vuelve a entrar para aplicar permisos de grupo
+newgrp docker
 ```
 
-#### 3. Clonar el Proyecto y Configurar Variables de Entorno
+#### 3. Emitir el Certificado SSL con Certbot (Let's Encrypt)
+Con Docker temporalmente detenido (para liberar el puerto 80):
 ```bash
-git clone <URL_DE_TU_REPOSITORIO>
+sudo certbot certonly --standalone -d ventasfix.duckdns.org
+```
+
+#### 4. Clonar y Desplegar el Proyecto con Docker Compose
+```bash
+cd ~
+git clone <URL_DE_TU_REPOSITORIO_GIT>
 cd VentasFix
 
-# Crear tu archivo .env basado en la plantilla de producción
+# Crear el archivo de variables de entorno
 cp .env.example .env
-nano .env
-```
-> [!IMPORTANT]
-> Configura contraseñas seguras para `DB_PASSWORD` y `DB_ROOT_PASSWORD` en el archivo `.env`. Si accedes al frontend a través del puerto 80 con el Nginx proxy inverso incluido, `VITE_API_URL=/api` funcionará sin necesidad de configurar dominios adicionales.
 
-#### 4. Construir y Levantar los Servicios en OCI
+# Construir y levantar todos los contenedores en segundo plano
+docker-compose up -d --build
+```
+
+#### 5. Verificación de Contenedores y Salud
 ```bash
-# Construir imágenes y levantar en segundo plano
-docker compose up -d --build
+# Ver los contenedores activos
+docker-compose ps
 
-# Verificar el estado de los contenedores
-docker compose ps
+# Probar la salud del backend
+curl http://localhost:8080/api/health
 ```
 
-#### 5. Verificación de Funcionamiento en la Nube
-1. **Health Check del Backend:**
-   ```bash
-   curl http://localhost:8080/api/health
-   # Respuesta esperada: {"status":"UP","service":"VentasFix Backend"}
-   ```
-2. **Acceso Web:**
-   Ingresa en tu navegador web a la IP pública de tu instancia OCI:
-   `http://<TU_IP_PUBLICA_OCI>`
-3. **Credenciales de Acceso Inicial:**
-   - **Usuario:** `admin@ventasfix.cl`
-   - **Contraseña:** `admin123`
-   *(El `DataSeeder` precarga automáticamente el administrador y catálogo base al iniciar).*
+#### 6. ¡Acceso Seguro en Producción!
+Ingresa directamente en tu navegador a:
+👉 **[https://ventasfix.duckdns.org](https://ventasfix.duckdns.org)**
+
+---
+
+## 👥 Equipo de Desarrollo y Rúbrica
+Proyecto desarrollado bajo estándares estrictos de ingeniería de software:
+- **Patrón MVC** en Backend con separación estricta por capas (`controllers`, `services`, `repositories`, `models`, `dto`).
+- **Componentes Modulares Reutilizables** en Frontend (`DataTable`, `FormModal`, `ConfirmModal`, `Layout`).
+- **Seguridad perimetral y de transporte:** JWT Bearer Token, cifrado BCrypt y SSL/TLS Let's Encrypt.
+- **Códigos de estado HTTP rigurosos:** `200 OK`, `201 Created`, `204 No Content`, `400 Bad Request`, `401 Unauthorized`, `403 Forbidden`, `404 Not Found`.
 
 ---
 
