@@ -3,11 +3,13 @@ package com.ventasfix.config;
 import com.ventasfix.dto.ClienteDTO;
 import com.ventasfix.dto.ProductoDTO;
 import com.ventasfix.dto.UsuarioDTO;
+import com.ventasfix.repositories.UsuarioRepository;
 import com.ventasfix.services.ClienteService;
 import com.ventasfix.services.ProductoService;
 import com.ventasfix.services.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -15,6 +17,12 @@ public class DataSeeder implements CommandLineRunner {
 
     @Autowired
     private UsuarioService usuarioService;
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
     private ProductoService productoService;
@@ -32,7 +40,7 @@ public class DataSeeder implements CommandLineRunner {
                 u1.setNombre("Admin");
                 u1.setApellido("VentasFix");
                 u1.setEmail("admin@ventasfix.cl");
-                u1.setPassword("admin123");
+                u1.setPassword("VentasFix2026!Pro");
                 usuarioService.save(u1);
 
                 UsuarioDTO u2 = new UsuarioDTO();
@@ -42,6 +50,12 @@ public class DataSeeder implements CommandLineRunner {
                 u2.setEmail("csilva@ventasfix.cl");
                 u2.setPassword("carlos123");
                 usuarioService.save(u2);
+            } else {
+                // Actualizar la clave del admin si ya existía para reemplazar la anterior comprometida
+                usuarioRepository.findByEmail("admin@ventasfix.cl").ifPresent(admin -> {
+                    admin.setPassword(passwordEncoder.encode("VentasFix2026!Pro"));
+                    usuarioRepository.save(admin);
+                });
             }
 
             // Productos

@@ -28,7 +28,7 @@ La plataforma se encuentra desplegada y asegurada con certificado SSL/TLS en la 
 | Campo | Valor |
 |---|---|
 | **Correo Electrónico (Username)** | `admin@ventasfix.cl` |
-| **Contraseña** | `admin123` |
+| **Contraseña** | `VentasFix2026!Pro` |
 
 > [!NOTE]
 > Al iniciar la aplicación en un entorno nuevo, el componente `DataSeeder` precarga automáticamente el usuario administrador inicial junto con un catálogo completo de productos y clientes de prueba.
@@ -168,7 +168,7 @@ npm run dev
 
 Ingresa a `http://localhost:5173` e inicia sesión con:
 - **Correo:** `admin@ventasfix.cl`
-- **Contraseña:** `admin123`
+- **Contraseña:** `VentasFix2026!Pro`
 
 ---
 
